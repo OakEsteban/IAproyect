@@ -24,12 +24,19 @@ def node(treeCoord, matrizCoord, value, countValue, father, son):
 
 def defaultMatrix():
     matrix = [[1, 1, 3, 1, 1, 1, 1, 1], 
-                   [1, -2, 0, 0, -2, 0, 0, 1],
-                   [1, 0, 1, 1, 1, 0, 0, 1],
-                   [1, 0, 1, 0, 0, 0, 1, 1],
-                   [1, -2, 1, 3, 1, 1, 1, 1]]
+              [1, -2, 0, 0, -2, 0, 0, 1],
+              [1, 0, 1, 1, 1, 0, 0, 1],
+              [1, 0, 1, 0, 0, 0, 1, 1],
+              [1, -2, 1, 3, 1, 1, 1, 1]]
     return matrix
 
+def defaultMatrix2():
+    matrix = [[-2, 0, 3, 0, 1, 1, 1, 0], 
+              [1, -2, 1, 0, -2, 0, 1, 1],
+              [1, 0, 1, 1, 1, 0, 0, -2],
+              [1, 0, 1, 0, 1, 0, 1, 1],
+              [3, -2, 1, 0, -2, 1, 1, 3]]
+    return matrix
 
 #--------- Modificacion a la matriz (solucion a un error) -----
 
@@ -334,18 +341,25 @@ def mostrar_matriz(matriz, path, pathEstrella):
 
 #-------- Implementacion --------------------
 
-worldMatrix = defaultMatrix()
+#worldMatrix = defaultMatrix()
+worldMatrix = defaultMatrix2()
 
-worldMatrixAjustada = worldMatrix
+worldMatrixAjustada = copy.deepcopy(worldMatrix)
+ajustarMatriz(worldMatrixAjustada)
 metaCoords = [2, 0]
-agenteCoords = [2, 7]
+#agenteCoords = [2, 7]
 #agenteCoords = [1, 7]
 #agenteCoords = [2, 3]
 
-costoR = costoRecursivo(ajustarMatriz(worldMatrixAjustada), agenteCoords)
-aEstrella = AEstrella(worldMatrix, agenteCoords)
+#ejemplo matriz 2
+#agenteCoords = [1, 4]
+#agenteCoords = [1, 6]
+agenteCoords = [4, 5]
+
+costoR = costoRecursivo(worldMatrixAjustada, agenteCoords)
+aEstrella = AEstrella(worldMatrixAjustada, agenteCoords)
 
 print("CR: " + str(costoR[0]) + ", Costo: " + str(costoR[1])+ ", Iteraciones: " + str(costoR[2]))
 print("A*: " + str(aEstrella[0])+ ", Costo: " + str(aEstrella[1])+ ", Iteraciones: " + str(aEstrella[2]))
 #Mostrar resultado
-mostrar_matriz(defaultMatrix(), costoR[0], aEstrella[0])
+mostrar_matriz(worldMatrix, costoR[0], aEstrella[0])
