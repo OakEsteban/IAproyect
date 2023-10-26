@@ -1,5 +1,6 @@
 import time
 import pygame
+import copy
 #matrix del mundo
 worldMatrix = []
 
@@ -9,12 +10,13 @@ metaCoords = [0, 0]
 actualNodes = [] #Fila de nodos actuales
 
 #Create a new node
-def node(treeCoord, matrizCoord, value, father, son):
+def node(treeCoord, matrizCoord, value, countValue, father, son):
     # Crear un diccionario con los valores dados
     node_dict = {
         "treeCoord": treeCoord,
         "matrizCoord": matrizCoord,
         "value": value,
+        "countValue" : countValue,
         "father": father,
         "son": son
     }
@@ -27,6 +29,16 @@ def defaultMatrix():
                    [1, 0, 1, 0, 0, 0, 1, 1],
                    [1, -2, 1, 3, 1, 1, 1, 1]]
     return matrix
+
+
+#--------- Modificacion a la matriz (solucion a un error) -----
+
+def ajustarMatriz(matriz):
+    for i in range(len(matriz)):
+        for j in range(len(matriz[i])):
+            if matriz[i][j] != 0:
+                matriz[i][j] += 3
+    return matriz
 
 #-------- Funciones analizar matriz ------------
 
@@ -75,22 +87,22 @@ def getSons(y, x,father, matriz, agenteCoord):
 
     value = upValue(matriz, agenteCoord)
     if not value == None:
-        lst.append(node([y,x], [agenteCoord[0]-1, agenteCoord[1]], value, father, None))
+        lst.append(node([y,x], [agenteCoord[0]-1, agenteCoord[1]], value, father["countValue"]+value, father, None))
         x+=1
 
     value = rightValue(matriz, agenteCoord)
     if not value == None:
-        lst.append(node([y,x], [agenteCoord[0], agenteCoord[1]+1], value, father, None))
+        lst.append(node([y,x], [agenteCoord[0], agenteCoord[1]+1], value, father["countValue"]+value, father, None))
         x+=1
 
     value = downValue(matriz, agenteCoord)
     if not value == None:
-        lst.append(node([y,x], [agenteCoord[0]+1, agenteCoord[1]], value, father, None))
+        lst.append(node([y,x], [agenteCoord[0]+1, agenteCoord[1]], value, father["countValue"]+value, father, None))
         x+=1
 
     value = leftValue(matriz, agenteCoord)
     if not value == None:
-        lst.append(node([y,x], [agenteCoord[0], agenteCoord[1]-1], value, father, None))
+        lst.append(node([y,x], [agenteCoord[0], agenteCoord[1]-1], value, father["countValue"]+value, father, None))
 
     return lst
 
@@ -101,22 +113,71 @@ def giveSonsToFather(father, sons):
 
 def listOfCosts():
     return 0
+
+def checkMeta(row):
+    for i in row:
+        if i["matrizCoord"] == metaCoords:
+            return i["treeCoord"]
+    return None
+
+def createPath(node):
+    path = []
+    while not node == None:
+        path.append(node["matrizCoord"])
+        node = node["father"]
+    path.reverse()
+    return path
 #---------- Costo recursivo ----
 
 def costoRecursivo(matriz, agente):
     tree = []
-    listOfCosts = []
     path = []
 
     #Inicializar el arbol
-    firstFather = node([0,0], agente, matriz[agente[0]][agente[1]], None, None)
+    firstFather = node([0,0], agente, matriz[agente[0]][agente[1]], matriz[agente[0]][agente[1]], None, None) #Generamos el primer padre
     tree.append([firstFather]) #Añadimos el primer padre al arbol
-    firstSon = getSons(1, 0, firstFather, matriz, agente) #Obtenemos los primero hijos
+    firstSon = getSons(1, 0, firstFather, matriz, agente) #Generamos los primero hijos
     tree.append(firstSon) #Añadimos los hijos al arbol
     tree[0] = [giveSonsToFather(tree[0][0], firstSon)] #Actualizamos los hijos del primer padre
     
+    justInCase = 0
+    while True:
+        #Check si llego a meta sus hijos
+        #if not checkMeta(tree[1]) == None:
+        #    return createPath(checkMeta(tree[1]))
+        #for n in tree:
+        #    if not checkMeta(n) == None:
+        #        return createPath(checkMeta(n))
+        
+        #Buscar el que tenga menor coste segun la profundidad de cada uno
+        nodoMenor = None
+        for i in tree:
+            for j in i:
+                if (nodoMenor == None or j["countValue"] < nodoMenor["countValue"]) and j["son"] == None:
+                    nodoMenor = j
+        
+        #Check si es meta
+        if nodoMenor["matrizCoord"] == metaCoords:
+            return createPath(nodoMenor)
 
-    return tree
+        #sino expandir las ramas de nodoMenor
+        y = nodoMenor["treeCoord"][0]
+        x = 0
+        if y+1 == len(tree):
+            tree.append([])
+        else:
+            x = len(tree[y+1])
+        sons = getSons(y+1, x, nodoMenor, matriz, nodoMenor["matrizCoord"]) #Generamos hijos de nodoMenor
+        tree[y+1] += sons #Añadimos los hijos al arbol
+        tree[nodoMenor["treeCoord"][0]][nodoMenor["treeCoord"][1]] = giveSonsToFather(nodoMenor, sons) #Actualizamos los hijos del primer padre
+        print(nodoMenor["matrizCoord"])
+
+        justInCase += 1
+        if justInCase == 10000:
+           print("error en la matrix")
+           break
+           #return createPath(nodoMenor)
+        
 
 #-----------Interfaz grafica---------------------
 
@@ -143,7 +204,8 @@ def mostrar_matriz(matriz, path):
     imagen_naranja = pygame.image.load("Justo.jpg") # Sustituye "naranja.png" con tu imagen
     imagen_rojo = pygame.image.load("katz.jpg")
     imagen_agente = pygame.image.load("coraje.webp")
-
+    imagen_meta = pygame.image.load("Muriel.png")
+    
     pygame.init()
     pantalla = pygame.display.set_mode((ventana_ancho, ventana_alto))
     pygame.display.set_caption("Corage world")
@@ -178,9 +240,12 @@ def mostrar_matriz(matriz, path):
                     imagen = imagen_naranja
                 elif valor == 3:
                     imagen = imagen_rojo
+                if metaCoords == [i, j]:
+                    imagen = imagen_meta                    
                 if agenteCoords == [i, j]:
                     imagen = imagen_agente
-
+                
+                    
                 # Redimensionar la imagen al tamaño de la casilla
                 imagen = pygame.transform.scale(imagen, (ancho_casilla, alto_casilla))
 
@@ -202,11 +267,12 @@ def mostrar_matriz(matriz, path):
 #-------- Implementacion --------------------
 
 worldMatrix = defaultMatrix()
-metaCoords = [2, 0]
-agenteCoords = [0, 1]
 
-s = costoRecursivo(worldMatrix, agenteCoords)
-print(s[0][0]["son"][0]["value"])
+worldMatrixAjustada = worldMatrix
+metaCoords = [2, 0]
+agenteCoords = [1, 7]
+
+s = costoRecursivo(ajustarMatriz(worldMatrixAjustada), agenteCoords)
 
 #Mostrar resultado
-mostrar_matriz(worldMatrix, [agenteCoords, [0,2], [0,3], [1,3], [2,3], [3,3]])
+mostrar_matriz(defaultMatrix(), s)
