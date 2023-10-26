@@ -131,7 +131,6 @@ def createPath(node):
 
 def costoRecursivo(matriz, agente):
     tree = []
-    path = []
 
     #Inicializar el arbol
     firstFather = node([0,0], agente, matriz[agente[0]][agente[1]], matriz[agente[0]][agente[1]], None, None) #Generamos el primer padre
@@ -158,7 +157,8 @@ def costoRecursivo(matriz, agente):
         
         #Check si es meta
         if nodoMenor["matrizCoord"] == metaCoords:
-            return createPath(nodoMenor)
+            path = createPath(nodoMenor)
+            return [path, nodoMenor["countValue"]-(len(path)*3), justInCase]
 
         #sino expandir las ramas de nodoMenor
         y = nodoMenor["treeCoord"][0]
@@ -175,9 +175,66 @@ def costoRecursivo(matriz, agente):
         justInCase += 1
         if justInCase == 10000:
            print("error en la matrix")
+           return createPath(nodoMenor)
+           
+           
+        
+
+#---------- Busqueda A* -------------------
+
+def findEuristica(agente, meta):
+    return abs(agente[1] - meta[1]) + abs(agente[0] - meta[0])
+
+
+def AEstrella(matriz, agente):
+    tree = []
+
+    #Inicializar el arbol
+    firstFather = node([0,0], agente, matriz[agente[0]][agente[1]], matriz[agente[0]][agente[1]], None, None) #Generamos el primer padre
+    tree.append([firstFather]) #Añadimos el primer padre al arbol
+    firstSon = getSons(1, 0, firstFather, matriz, agente) #Generamos los primero hijos
+    tree.append(firstSon) #Añadimos los hijos al arbol
+    tree[0] = [giveSonsToFather(tree[0][0], firstSon)] #Actualizamos los hijos del primer padre
+    
+    justInCase = 0
+    while True:
+        #Check si llego a meta sus hijos
+        #if not checkMeta(tree[1]) == None:
+        #    return createPath(checkMeta(tree[1]))
+        #for n in tree:
+        #    if not checkMeta(n) == None:
+        #        return createPath(checkMeta(n))
+        
+        #Buscar el que tenga menor coste segun la profundidad de cada uno
+        nodoMenor = None
+        for i in tree:
+            for j in i:
+                if (nodoMenor == None or (j["countValue"]+findEuristica(j["matrizCoord"], metaCoords) < nodoMenor["countValue"])) and j["son"] == None:
+                    nodoMenor = j
+        
+        #Check si es meta
+        if nodoMenor["matrizCoord"] == metaCoords:
+            path = createPath(nodoMenor)
+            return [path, nodoMenor["countValue"]-(len(path)*3), justInCase]
+
+
+        #sino expandir las ramas de nodoMenor
+        y = nodoMenor["treeCoord"][0]
+        x = 0
+        if y+1 == len(tree):
+            tree.append([])
+        else:
+            x = len(tree[y+1])
+        sons = getSons(y+1, x, nodoMenor, matriz, nodoMenor["matrizCoord"]) #Generamos hijos de nodoMenor
+        tree[y+1] += sons #Añadimos los hijos al arbol
+        tree[nodoMenor["treeCoord"][0]][nodoMenor["treeCoord"][1]] = giveSonsToFather(nodoMenor, sons) #Actualizamos los hijos del primer padre
+        print(nodoMenor["matrizCoord"])
+
+        justInCase += 1
+        if justInCase == 5000:
+           print("error en la matrix")
            break
            #return createPath(nodoMenor)
-        
 
 #-----------Interfaz grafica---------------------
 
@@ -192,12 +249,14 @@ AGENTECOLOR = (255, 11, 207 )
 METACOLOR = (255, 244, 11 )
 BLACK = (0,0,0)
 
-def mostrar_matriz(matriz, path):
+def mostrar_matriz(matriz, path, pathEstrella):
     pathI = 0
+    pathIE = 0
     ancho_casilla = 150
     alto_casilla = 150
     ventana_ancho = ancho_casilla * len(matriz[0])
     ventana_alto = alto_casilla * len(matriz)
+    estrellaCoords = [0, 0]
 
     imagen_negro = pygame.image.load("black.png")  # Sustituye "negro.png" con tu imagen
     imagen_verde = pygame.image.load("white.jpg")  # Sustituye "verde.png" con tu imagen
@@ -205,7 +264,7 @@ def mostrar_matriz(matriz, path):
     imagen_rojo = pygame.image.load("katz.jpg")
     imagen_agente = pygame.image.load("coraje.webp")
     imagen_meta = pygame.image.load("Muriel.png")
-    
+    imagen_estrella = pygame.image.load("corajeEstrella.png")
     pygame.init()
     pantalla = pygame.display.set_mode((ventana_ancho, ventana_alto))
     pygame.display.set_caption("Corage world")
@@ -223,6 +282,12 @@ def mostrar_matriz(matriz, path):
             agenteCoords[0] = path[pathI][0]
             agenteCoords[1] = path[pathI][1]
             pathI +=1
+        
+        #Mover el agenteEstrella
+        if pathIE < len(pathEstrella):
+            estrellaCoords[0] = pathEstrella[pathIE][0]
+            estrellaCoords[1] = pathEstrella[pathIE][1]
+            pathIE +=1
 
         # Dibujar la matriz en la ventana
         for i in range(len(matriz)):
@@ -241,9 +306,12 @@ def mostrar_matriz(matriz, path):
                 elif valor == 3:
                     imagen = imagen_rojo
                 if metaCoords == [i, j]:
-                    imagen = imagen_meta                    
+                    imagen = imagen_meta
+                if estrellaCoords == [i, j]:
+                    imagen = imagen_estrella                    
                 if agenteCoords == [i, j]:
                     imagen = imagen_agente
+                
                 
                     
                 # Redimensionar la imagen al tamaño de la casilla
@@ -270,9 +338,14 @@ worldMatrix = defaultMatrix()
 
 worldMatrixAjustada = worldMatrix
 metaCoords = [2, 0]
-agenteCoords = [1, 7]
+agenteCoords = [2, 7]
+#agenteCoords = [1, 7]
+#agenteCoords = [2, 3]
 
-s = costoRecursivo(ajustarMatriz(worldMatrixAjustada), agenteCoords)
+costoR = costoRecursivo(ajustarMatriz(worldMatrixAjustada), agenteCoords)
+aEstrella = AEstrella(worldMatrix, agenteCoords)
 
+print("CR: " + str(costoR[0]) + ", Costo: " + str(costoR[1])+ ", Iteraciones: " + str(costoR[2]))
+print("A*: " + str(aEstrella[0])+ ", Costo: " + str(aEstrella[1])+ ", Iteraciones: " + str(aEstrella[2]))
 #Mostrar resultado
-mostrar_matriz(defaultMatrix(), s)
+mostrar_matriz(defaultMatrix(), costoR[0], aEstrella[0])
