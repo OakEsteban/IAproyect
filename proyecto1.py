@@ -148,13 +148,6 @@ def costoRecursivo(matriz, agente):
     
     justInCase = 0
     while True:
-        #Check si llego a meta sus hijos
-        #if not checkMeta(tree[1]) == None:
-        #    return createPath(checkMeta(tree[1]))
-        #for n in tree:
-        #    if not checkMeta(n) == None:
-        #        return createPath(checkMeta(n))
-        
         #Buscar el que tenga menor coste segun la profundidad de cada uno
         nodoMenor = None
         for i in tree:
@@ -205,14 +198,6 @@ def AEstrella(matriz, agente):
     
     justInCase = 0
     while True:
-        #Check si llego a meta sus hijos
-        #if not checkMeta(tree[1]) == None:
-        #    return createPath(checkMeta(tree[1]))
-        #for n in tree:
-        #    if not checkMeta(n) == None:
-        #        return createPath(checkMeta(n))
-        
-        #Buscar el que tenga menor coste segun la profundidad de cada uno
         nodoMenor = None
         for i in tree:
             for j in i:
@@ -341,20 +326,20 @@ def mostrar_matriz(matriz, path, pathEstrella):
 
 #-------- Implementacion --------------------
 
-#worldMatrix = defaultMatrix()
-worldMatrix = defaultMatrix2()
+worldMatrix = defaultMatrix()
+#worldMatrix = defaultMatrix2()
 
 worldMatrixAjustada = copy.deepcopy(worldMatrix)
 ajustarMatriz(worldMatrixAjustada)
 metaCoords = [2, 0]
-#agenteCoords = [2, 7]
+agenteCoords = [2, 7]
 #agenteCoords = [1, 7]
 #agenteCoords = [2, 3]
 
 #ejemplo matriz 2
 #agenteCoords = [1, 4]
 #agenteCoords = [1, 6]
-agenteCoords = [4, 5]
+#agenteCoords = [4, 5]
 
 costoR = costoRecursivo(worldMatrixAjustada, agenteCoords)
 aEstrella = AEstrella(worldMatrixAjustada, agenteCoords)
